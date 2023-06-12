@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1579607917188991609}
   - component: {fileID: 6234455105206459154}
   - component: {fileID: 8737517357494826923}
-  - component: {fileID: 6463160527969970981}
   - component: {fileID: 3823178867989481212}
   m_Layer: 7
   m_Name: Default
@@ -79,23 +78,11 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 96
+  m_Constraints: 0
   m_CollisionDetection: 1
---- !u!75 &6463160527969970981
-ConstantForce:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1363182054123584161}
-  m_Enabled: 1
-  m_Force: {x: 0, y: -100, z: 0}
-  m_RelativeForce: {x: 0, y: 0, z: 0}
-  m_Torque: {x: 0, y: 0, z: 0}
-  m_RelativeTorque: {x: 0, y: 0, z: 0}
 --- !u!114 &3823178867989481212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,7 +96,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   body: {fileID: 8737517357494826923}
-  gravityAccelerator: {fileID: 6463160527969970981}
 --- !u!1 &2456097243819024386
 GameObject:
   m_ObjectHideFlags: 0

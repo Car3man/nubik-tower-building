@@ -5,12 +5,8 @@ namespace NubikTowerBuilding.Behaviours
     public class BuildingBlock : MonoBehaviour
     {
         [SerializeField] private Rigidbody body;
-        [SerializeField] private ConstantForce gravityAccelerator;
-        
-        private Crane _connectedCrane;
-        private Rigidbody _connectedPlatform;
-        private BuildingBlock _connectedBlock;
-        private HingeJoint _hingeJoint;
+
+        private BuildingBlock _attachedBuildingBlock;
         private FixedJoint _fixedJoint;
 
         public delegate void CollideDelegate(BuildingBlock block, Collision other);
@@ -33,107 +29,49 @@ namespace NubikTowerBuilding.Behaviours
         {
             return body;
         }
-
-        public void ResetBuildingBlock()
+        
+        public bool AttachBuildingBlock(BuildingBlock buildingBlock)
         {
-            body.useGravity = false;
-            body.constraints = RigidbodyConstraints.FreezeRotationX |
-                               RigidbodyConstraints.FreezeRotationY |
-                               RigidbodyConstraints.FreezeRotationZ;
-            
-            _connectedCrane = null;
-
-            if (_hingeJoint != null)
+            if (_attachedBuildingBlock != null)
             {
-                Destroy(_hingeJoint);
-            }
-
-            gravityAccelerator.enabled = false;
-        }
-
-        public void ConnectToCrane(Crane crane)
-        {
-            if (_connectedCrane != null)
-            {
-                Debug.LogWarning("BuildingBlock already connected to another crane.");
-                return;
+                Debug.LogWarning("BuildPlatform already have attached building block");
+                return false;
             }
             
-            _connectedCrane = crane;
+            _attachedBuildingBlock = buildingBlock;
+
+            _attachedBuildingBlock.transform.SetParent(transform);
             
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
+            var blockWidth = buildingBlock.transform.localScale.x;
+            var blockHeight = buildingBlock.transform.localScale.y;
+            var buildingBlockBody = _attachedBuildingBlock.GetBody();
+            var buildingBlockLocPos = _attachedBuildingBlock.transform.localPosition;
 
-            _hingeJoint = gameObject.AddComponent<HingeJoint>();
-            _hingeJoint.autoConfigureConnectedAnchor = false;
-            _hingeJoint.connectedBody = crane.GetHook();
-            _hingeJoint.anchor = Vector3.up * 0.5f;
-            _hingeJoint.connectedAnchor = Vector3.down * 0.5f;
-            _hingeJoint.axis = Vector3.forward;
-
-            gravityAccelerator.enabled = false;
-        }
-
-        public void ConnectToPlatform(Rigidbody platform)
-        {
-            if (_connectedPlatform != null)
+            if (Mathf.Abs(buildingBlockLocPos.x) > blockWidth / 2f)
             {
-                Debug.LogWarning("BuildingBlock already connected to another platform.");
-                return;
+                _attachedBuildingBlock.transform.SetParent(null);
+                _attachedBuildingBlock = null;
+                
+                return false;
             }
-            
-            _connectedPlatform = platform;
-            
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.useGravity = false;
-            body.isKinematic = true;
-
-            gravityAccelerator.enabled = false;
-        }
-
-        public void ConnectToBlock(BuildingBlock buildingBlock)
-        {
-            if (_connectedBlock != null)
+            else
             {
-                Debug.LogWarning("BuildingBlock already connected to another block.");
-                return;
+                Destroy(buildingBlock.GetComponent<ConstantForce>());
+                
+                buildingBlockBody.useGravity = false;
+                buildingBlockBody.isKinematic = true;
+                buildingBlockBody.velocity = Vector3.zero;
+                buildingBlockBody.angularVelocity = Vector3.zero;
+
+                buildingBlockLocPos.y = blockHeight;
+                buildingBlockLocPos.z = 0f;
+
+                var correctedPosition = transform.TransformPoint(buildingBlockLocPos);
+                buildingBlock.transform.localPosition = buildingBlockLocPos;
+                buildingBlock.transform.localRotation = Quaternion.identity;
+                
+                return true;
             }
-            
-            _connectedBlock = buildingBlock;
-            
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.MovePosition(new Vector3(
-                body.position.x,
-                buildingBlock.GetBody().position.y + buildingBlock.transform.localScale.y / 2f,
-                body.position.z)
-            );
-            body.isKinematic = true;
-            
-            _fixedJoint = gameObject.AddComponent<FixedJoint>();
-            _fixedJoint.connectedBody = buildingBlock.GetBody();
-
-            gravityAccelerator.enabled = false;
-        }
-
-        public void Drop()
-        {
-            if (_connectedCrane == null)
-            {
-                Debug.LogWarning("BuildingBlock not connect to any crane.");
-                return;
-            }
-
-            _connectedCrane = null;
-            
-            Destroy(_hingeJoint);
-            
-            gravityAccelerator.enabled = true;
-            
-            body.constraints = RigidbodyConstraints.None;
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
         }
     }
 }

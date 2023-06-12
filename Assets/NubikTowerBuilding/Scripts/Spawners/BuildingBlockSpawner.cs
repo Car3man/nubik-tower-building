@@ -19,7 +19,6 @@ namespace NubikTowerBuilding.Spawners
         public BuildingBlock Spawn(BuildingBlockType type)
         {
             var instance = _factory.Create(type);
-            instance.ResetBuildingBlock();
             return instance;
         }
 

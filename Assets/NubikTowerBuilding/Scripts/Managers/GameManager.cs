@@ -23,12 +23,21 @@ namespace NubikTowerBuilding.Managers
 
         private void Update()
         {
+            UpdateTowerSwing();
             UpdateHeights();
             
             if (!_waitForDropAnimation && _currBuildingBlock != null && Input.GetMouseButtonUp(0))
             {
                 DropBlock();
             }
+        }
+
+        private void UpdateTowerSwing()
+        {
+            var frequency = 1.5f;
+            var amplitude = (tower.GetHeight() - 5) * 0.15f;
+            amplitude = Mathf.Clamp(amplitude, 0f, 2f);
+            tower.SetSwing(amplitude, frequency);
         }
 
         private void UpdateHeights()
@@ -41,7 +50,7 @@ namespace NubikTowerBuilding.Managers
         {
             var craneTrans = crane.transform;
             var cranePos = craneTrans.position;
-            cranePos.y = 70f + 6f / 2f * tower.GetHeight(); // 70f is start height, 6 is block height
+            cranePos.y = 75f + 5.6f * tower.GetHeight();
             craneTrans.position = cranePos;
         }
         
@@ -49,7 +58,7 @@ namespace NubikTowerBuilding.Managers
         {
             var cameraTrans = gameCamera.transform;
             var cameraPos = cameraTrans.position;
-            cameraPos.y = 40f + 6f / 2f * tower.GetHeight(); // 40f is start height, 6 is block height
+            cameraPos.y = 30f + 5.6f * tower.GetHeight();
             cameraTrans.position = cameraPos;
         }
 
@@ -62,7 +71,7 @@ namespace NubikTowerBuilding.Managers
             }
             
             _currBuildingBlock = _buildingBlockSpawner.Spawn(BuildingBlockType.Default);
-            _currBuildingBlock.ConnectToCrane(crane);
+            crane.AttachBuildingBlock(_currBuildingBlock);
         }
 
         private void DropBlock()
@@ -75,8 +84,9 @@ namespace NubikTowerBuilding.Managers
 
             _currBuildingBlock.OnCollide += OnBuildingBlockCollide;
             _currBuildingBlock.OnBroke += OnBuildingBlockBroke;
-            _currBuildingBlock.Drop();
             _currBuildingBlock = null;
+
+            crane.DropBuildingBlock();
 
             _waitForDropAnimation = true;
         }
@@ -90,7 +100,7 @@ namespace NubikTowerBuilding.Managers
         private void OnBuildingBlockCollide(BuildingBlock block, Collision other)
         {
             block.OnCollide -= OnBuildingBlockCollide;
-            
+
             if (other.gameObject.layer == LayerMask.NameToLayer("BuildPlatform"))
             {
                 if (tower.IsEmpty())
