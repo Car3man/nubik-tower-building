@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using NubikTowerBuilding.Models;
+using UnityEngine;
 
 namespace NubikTowerBuilding.Behaviours
 {
@@ -6,12 +7,19 @@ namespace NubikTowerBuilding.Behaviours
     {
         private BuildingBlock _attachedBuildingBlock;
         
-        public void AttachBuildingBlock(BuildingBlock buildingBlock)
+        public AttachBuildingBlockResult AttachBuildingBlock(BuildingBlock buildingBlock)
         {
             if (_attachedBuildingBlock != null)
             {
                 Debug.LogWarning("BuildPlatform already have attached building block");
-                return;
+                return new AttachBuildingBlockResult
+                {
+                    AnchorBlock = null,
+                    ConnectedBlock = buildingBlock,
+                    IsRootBlock = true,
+                    IsSuccess = false,
+                    IsPerfect = false
+                };
             }
 
             _attachedBuildingBlock = buildingBlock;
@@ -21,7 +29,7 @@ namespace NubikTowerBuilding.Behaviours
             var buildPlatformTrans = transform;
             var buildPlatformPos = buildPlatformTrans.position;
             var buildPlatformHeight = buildPlatformTrans.localScale.y;
-            var blockHeight = buildingBlock.transform.localScale.y;
+            var blockHeight = buildingBlock.GetDimensions().y;
             var buildingBlockBody = _attachedBuildingBlock.GetBody();
             buildingBlockBody.velocity = Vector3.zero;
             buildingBlockBody.angularVelocity = Vector3.zero;
@@ -33,7 +41,16 @@ namespace NubikTowerBuilding.Behaviours
                 buildPlatformPos.y + buildPlatformHeight / 2f + blockHeight / 2f,
                 buildingBlockBodyPos.z
             );
-            buildingBlockBody.position = buildingBlockBodyPos;
+            buildingBlock.transform.position = buildingBlockBodyPos;
+            
+            return new AttachBuildingBlockResult
+            {
+                AnchorBlock = null,
+                ConnectedBlock = buildingBlock,
+                IsRootBlock = true,
+                IsSuccess = true,
+                IsPerfect = false
+            };
         }
     }
 }

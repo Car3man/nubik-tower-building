@@ -7,6 +7,7 @@ using KlopoffGames.Core.Localization;
 using KlopoffGames.Core.Saving;
 using NubikTowerBuilding.Adapters;
 using NubikTowerBuilding.Scenes;
+using NubikTowerBuilding.Services;
 using Zenject;
 
 namespace NubikTowerBuilding.Infrastructure
@@ -22,6 +23,7 @@ namespace NubikTowerBuilding.Infrastructure
             InstallLocalization();
             InstallAudio();
             InstallSceneReferences();
+            InstallServices();
         }
 
         private void InstallProjectEnvironment()
@@ -70,8 +72,15 @@ namespace NubikTowerBuilding.Infrastructure
 
         private void InstallSceneReferences()
         {
+            Container.Bind<SceneChanger>().FromNew().AsSingle();
             Container.Bind<SplashSceneRef>().FromNew().AsSingle();
             Container.Bind<GameSceneRef>().FromNew().AsSingle();
+        }
+
+        private void InstallServices()
+        {
+            Container.Bind<SavingService>().FromNew().AsSingle();
+            Container.Bind<UserCoinsService>().FromNew().AsSingle();
         }
     }
 }

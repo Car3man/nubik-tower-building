@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7848853619028416923}
   - component: {fileID: 5090883581984505548}
   - component: {fileID: -6604682352259564609}
+  - component: {fileID: 4830979139867965653}
   m_Layer: 0
   m_Name: ProjectContext
   m_TagString: Untagged
@@ -31,7 +32,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5090883581984505548
 MonoBehaviour:
@@ -74,5 +75,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09d95152eda7477e8cfc290258707c0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4830979139867965653
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 796554826975908079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 177eedd56c18b2646826f5aefcd2d1f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

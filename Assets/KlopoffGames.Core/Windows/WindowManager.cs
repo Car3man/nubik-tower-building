@@ -31,16 +31,27 @@ namespace KlopoffGames.Core.Windows
             return _stack[^1].GetType() == typeof(T);
         }
         
-        public T CreateWindow<T>(string prefix = "") where T : BaseWindow
+        public T CreateWindow<T>(string resourceFolder = "") where T : BaseWindow
         {
             var path = $"{typeof(T).Name}";
-            if (!string.IsNullOrEmpty(prefix))
+            if (!string.IsNullOrEmpty(resourceFolder))
             {
-                path = $"{prefix}/{path}";
+                path = $"{resourceFolder}/{path}";
             }
             var window = _factory.Create(path);
             OnWindowCreate(window);
             return (T)window;
+        }
+
+        public void HideWindow<T>() where T : BaseWindow
+        {
+            for (int i = _stack.Count - 1; i >= 0; i--)
+            {
+                if (_stack[i].GetType() == typeof(T))
+                {
+                    _stack[i].Hide();
+                }
+            }
         }
 
         public void Dispose()

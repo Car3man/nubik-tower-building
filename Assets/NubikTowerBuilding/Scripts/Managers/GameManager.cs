@@ -1,6 +1,9 @@
+using Cysharp.Threading.Tasks;
+using KlopoffGames.Core.Audio;
+using KlopoffGames.Core.Windows;
 using NubikTowerBuilding.Behaviours;
-using NubikTowerBuilding.Models;
-using NubikTowerBuilding.Spawners;
+using NubikTowerBuilding.Services;
+using NubikTowerBuilding.Ui.Windows;
 using UnityEngine;
 using Zenject;
 
@@ -8,125 +11,108 @@ namespace NubikTowerBuilding.Managers
 {
     public class GameManager : MonoBehaviour
     {
-        [Inject] private BuildingBlockSpawner _buildingBlockSpawner;
-        [SerializeField] private GameCamera gameCamera;
-        [SerializeField] private Crane crane;
-        [SerializeField] private Tower tower;
+        [Inject] private AudioManager _audio;
+        [Inject] private WindowManager _windows;
+        [Inject] private BuildManager _buildManager;
+        [Inject] private HealthManager _healthManager;
+        [Inject] private HeightManager _heightManager;
+        [Inject] private ScoreManager _scoreManager;
+        [Inject] private SwingManager _swingManager;
+        [Inject] private BuildEffectManager _buildEffectManager;
+        [Inject] private GameOverManager _gameOverManager;
+        [Inject] private SavingService _savingService;
+        [Inject] private UserCoinsService _userCoinsService;
+        [SerializeField] private GameObject inGameCanvas;
 
-        private BuildingBlock _currBuildingBlock;
-        private bool _waitForDropAnimation;
+        private bool _isGameStarted;
+
+        public int ReachedHeight => _buildManager.Tower.GetHeight();
+        public int ReachedPopulation { get; private set; }
+        public int EarnedCoins => Mathf.FloorToInt(_scoreManager.GetScore() / 50f);
+        
+        public const int OccupantsInNormalBlock = 1;
+        public const int OccupantsInPerfectBlock = 2;
+        
+        public void StartGame()
+        {
+            OnGameStart();
+        }
+
+        public void PlayAgain()
+        {
+            OnGameStart();
+        }
+
+        public void BackToLobby()
+        {
+            OnGameReady();
+        }
 
         private void Start()
         {
-            OnReadyToNewBlock();
-        }
+            _buildManager.OnSuccessBuild += BuildManagerOnSuccessBuild;
+            _gameOverManager.OnGameOver += OnGameOver;
 
-        private void Update()
-        {
-            UpdateTowerSwing();
-            UpdateHeights();
+            _audio.PlayMusicIfNotSame("MainTheme", 0.1f);
+            _buildManager.SetBuildingBlockType(_savingService.GetLastBlockPlayed());
             
-            if (!_waitForDropAnimation && _currBuildingBlock != null && Input.GetMouseButtonUp(0))
+            OnGameReady();
+        }
+
+        private void CleanUpManagers()
+        {
+            ReachedPopulation = 0;
+            
+            _buildManager.CleanUp(false);
+            _healthManager.CleanUp();
+            _heightManager.CleanUp();
+            _scoreManager.CleanUp();
+            _swingManager.CleanUp();
+            _buildEffectManager.CleanUp();
+            _gameOverManager.CleanUp();
+        }
+
+        private void BuildManagerOnSuccessBuild(BuildingBlock buildingBlock, bool perfect)
+        {
+            ReachedPopulation += perfect ? OccupantsInPerfectBlock : OccupantsInNormalBlock;
+        }
+
+        private void OnGameOver()
+        {
+            if (!_isGameStarted)
             {
-                DropBlock();
-            }
-        }
-
-        private void UpdateTowerSwing()
-        {
-            var frequency = 1.5f;
-            var amplitude = (tower.GetHeight() - 5) * 0.15f;
-            amplitude = Mathf.Clamp(amplitude, 0f, 2f);
-            tower.SetSwing(amplitude, frequency);
-        }
-
-        private void UpdateHeights()
-        {
-            UpdateCraneHeight();
-            UpdateCameraHeight();
-        }
-
-        private void UpdateCraneHeight()
-        {
-            var craneTrans = crane.transform;
-            var cranePos = craneTrans.position;
-            cranePos.y = 75f + 5.6f * tower.GetHeight();
-            craneTrans.position = cranePos;
-        }
-        
-        private void UpdateCameraHeight()
-        {
-            var cameraTrans = gameCamera.transform;
-            var cameraPos = cameraTrans.position;
-            cameraPos.y = 30f + 5.6f * tower.GetHeight();
-            cameraTrans.position = cameraPos;
-        }
-
-        private void CreateNextBlock()
-        {
-            if (_currBuildingBlock != null)
-            {
-                Debug.LogWarning("Current building block is not null. Can't create next block.");
                 return;
             }
             
-            _currBuildingBlock = _buildingBlockSpawner.Spawn(BuildingBlockType.Default);
-            crane.AttachBuildingBlock(_currBuildingBlock);
+            OnGameEnd();
         }
 
-        private void DropBlock()
+        private void OnGameReady()
         {
-            if (_currBuildingBlock == null)
-            {
-                Debug.LogWarning("Current building block is null. Nothing to drop.");
-                return;
-            }
-
-            _currBuildingBlock.OnCollide += OnBuildingBlockCollide;
-            _currBuildingBlock.OnBroke += OnBuildingBlockBroke;
-            _currBuildingBlock = null;
-
-            crane.DropBuildingBlock();
-
-            _waitForDropAnimation = true;
+            CleanUpManagers();
+            inGameCanvas.SetActive(false);
+            _windows.CreateWindow<LobbyGameWindow>("Windows/Game");
         }
 
-        private void OnReadyToNewBlock()
+        private async void OnGameStart()
         {
-            _waitForDropAnimation = false;
-            CreateNextBlock();
-        }
-        
-        private void OnBuildingBlockCollide(BuildingBlock block, Collision other)
-        {
-            block.OnCollide -= OnBuildingBlockCollide;
-
-            if (other.gameObject.layer == LayerMask.NameToLayer("BuildPlatform"))
-            {
-                if (tower.IsEmpty())
-                {
-                    tower.AddBuildingBlock(block);
-                }
-                else
-                {
-                    throw new System.Exception("Game over");
-                }
-            }
-            else if (other.gameObject.layer == LayerMask.NameToLayer("BuildingBlock"))
-            {
-                tower.AddBuildingBlock(block);
-            }
-            else
-            {
-                throw new System.Exception("Game over");
-            }
-
-            OnReadyToNewBlock();
+            CleanUpManagers();
+            await UniTask.WaitForEndOfFrame(this);
+            
+            inGameCanvas.SetActive(true);
+            _healthManager.SetHealth(3, false);
+            _buildManager.SetCanBuild(true);
+            
+            _isGameStarted = true;
+            
+            _savingService.SetLastBlockPlayed(_buildManager.GetBuildingBlockType());
         }
 
-        private void OnBuildingBlockBroke(BuildingBlock block)
+        private void OnGameEnd()
         {
-            throw new System.NotImplementedException();
+            _userCoinsService.AddCoins(EarnedCoins);
+            _windows.CreateWindow<GameOverWindow>("Windows/Game");
+            _buildManager.SetCanBuild(false);
         }
     }
 }

@@ -4,7 +4,7 @@ using Zenject;
 
 namespace NubikTowerBuilding.Factories
 {
-    public class BuildingBlockFactory : PlaceholderFactory<BuildingBlockType, BuildingBlock>
+    public class BuildingBlockFactory : PlaceholderFactory<bool, BuildingBlockType, BuildingBlock>
     {
         
     }

@@ -16,9 +16,9 @@ namespace NubikTowerBuilding.Spawners
             _factory = factory;
         }
 
-        public BuildingBlock Spawn(BuildingBlockType type)
+        public BuildingBlock Spawn(bool isFirst, BuildingBlockType type)
         {
-            var instance = _factory.Create(type);
+            var instance = _factory.Create(isFirst, type);
             return instance;
         }
 

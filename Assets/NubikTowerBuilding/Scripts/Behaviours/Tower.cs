@@ -1,27 +1,56 @@
-using System;
 using System.Collections.Generic;
+using NubikTowerBuilding.Models;
+using NubikTowerBuilding.Spawners;
 using UnityEngine;
-using UnityEngine.Serialization;
+using Zenject;
 
 namespace NubikTowerBuilding.Behaviours
 {
     public class Tower : MonoBehaviour
     {
-        [FormerlySerializedAs("platform")] [SerializeField] private BuildPlatform buildPlatform;
+        [Inject] private BuildingBlockSpawner _buildingBlockSpawner;
+        [Inject] private BuildPlatform _buildPlatform;
 
         private readonly List<BuildingBlock> _buildingBlocks = new();
         private float _swingAmplitude;
         private float _swingFrequency;
+        private float _swingCorrectionAngle;
 
-        private void FixedUpdate()
+        public delegate void AttachBuildingBlockDelegate(AttachBuildingBlockResult result);
+        public event AttachBuildingBlockDelegate OnAttachBuildingBlock;
+
+        private void Update()
+        {
+            CheckBlocksBodies();
+            UpdateSwing();
+        }
+        
+        private void CheckBlocksBodies()
+        {
+            for (int i = 0; i < GetHeight() - 3; i++)
+            {
+                if (_buildingBlocks[i].GetBody() != null)
+                {
+                    Destroy(_buildingBlocks[i].GetBody());
+                    Destroy(_buildingBlocks[i].GetComponent<Collider>());
+                }
+            }
+        }
+
+        private void UpdateSwing() 
         {
             if (!IsEmpty())
             {
                 var rootBlock = GetRootBlock();
-                var swing = Mathf.Sin(Time.time * _swingFrequency) * _swingAmplitude;
-                var rootBlockRotZ = Quaternion.Euler(0f, 0f, swing);
-                rootBlock.GetBody().MoveRotation(rootBlockRotZ);
+                var swingAngle = GetSwingValue(Time.time * _swingFrequency);
+                var rootBlockRot = Quaternion.Euler(0f, 0f, swingAngle + _swingCorrectionAngle);
+                rootBlock.transform.rotation = rootBlockRot;
             }
+        }
+
+        public float GetSwingValue(float t)
+        {
+            return Mathf.Sin(t) * _swingAmplitude;
         }
 
         public bool IsEmpty()
@@ -42,14 +71,10 @@ namespace NubikTowerBuilding.Behaviours
             }
             return _buildingBlocks[0];
         }
-
-        public BuildingBlock GetTopBlock()
+        
+        public List<BuildingBlock> GetBlocks()
         {
-            if (_buildingBlocks.Count == 0)
-            {
-                return null;
-            }
-            return _buildingBlocks[^1];
+            return _buildingBlocks;
         }
 
         public void SetSwing(float amplitude, float frequency)
@@ -57,25 +82,31 @@ namespace NubikTowerBuilding.Behaviours
             _swingAmplitude = amplitude;
             _swingFrequency = frequency;
         }
+
+        public void SetSwingCorrectionAngle(float angle)
+        {
+            _swingCorrectionAngle = angle;
+        }
+
+        public void CleanTower()
+        {
+            foreach (var buildingBlock in _buildingBlocks)
+            {
+                _buildingBlockSpawner.Despawn(buildingBlock);
+            }
+            _buildingBlocks.Clear();
+        }
         
         public void AddBuildingBlock(BuildingBlock buildingBlock)
         {
-            if (IsEmpty())
+            var result = IsEmpty() ?
+                _buildPlatform.AttachBuildingBlock(buildingBlock) :
+                _buildingBlocks[^1].AttachBuildingBlock(buildingBlock);
+            if (result.IsSuccess)
             {
-                buildPlatform.AttachBuildingBlock(buildingBlock);
                 _buildingBlocks.Add(buildingBlock);
             }
-            else
-            {
-                if (_buildingBlocks[^1].AttachBuildingBlock(buildingBlock))
-                {
-                    _buildingBlocks.Add(buildingBlock);
-                }
-                else
-                {
-                    // bad block
-                }
-            }
+            OnAttachBuildingBlock?.Invoke(result);
         }
     }
 }
