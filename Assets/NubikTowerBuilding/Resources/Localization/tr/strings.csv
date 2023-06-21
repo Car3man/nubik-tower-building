@@ -1,0 +1,16 @@
+id,tr
+btn_play,Oynamak
+btn_yes,Evet
+btn_no,Hayır
+btn_home,Eve don
+btn_again,Buna layık
+btn_done,Yapılı
+,
+lbl_loading,İndirme
+lbl_game_over,Oyun bitti
+lbl_settings,Ayarlar
+lbl_music,Muzik
+lbl_sounds,Sesler
+lbl_dont_show_anymore,Artık gosterme
+lbl_invite_friends_message,Arkadaslarınızı birlikte oynamaya davet edin!
+lbl_do_u_like_game,Oyunu begendin mi?

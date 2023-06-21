@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+
+    <script src="winfocus.min.js"></script>
+    <!-- Yandex Games SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
+  </head>
+  <body class="{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}">
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+    <div id="loading-cover" style="display:none;">
+      <div id="unity-loading-bar">
+        <div id="unity-logo"><img src="logo.png"></div>
+        <!-- <div id="unity-progress-bar-empty" style="display: none;">
+          <div id="unity-progress-bar-full"></div>
+        </div> -->
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <div id="unity-fullscreen-button" style="display: none;"></div>
+    <script>
+      let unityInstance;
+      
+      const buildUrl = "Build";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      const config = {
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+        memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+      };
+
+      const container = document.querySelector("#unity-container");
+      const canvas = document.querySelector("#unity-canvas");
+      const loadingCover = document.querySelector("#loading-cover");
+      // const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
+      // const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      const spinner = document.querySelector('.spinner');
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        // config.devicePixelRatio = 1;
+      }
+      loadingCover.style.display = "";
+
+      const script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+        }).then((instance) => {
+          unityInstance = instance;
+          spinner.style.display = "none";
+          loadingCover.style.display = "none";
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+
+      // Yandex implementation
+      
+      const waitForUnityInstance = async () => {
+        const waitPredicate = (res) => {
+          if (unityInstance) {
+            return res();
+          } else {
+            setTimeout(() => {
+              waitPredicate(res);
+            }, 100);
+          }
+        };
+        return new Promise(waitPredicate);
+      };
+      
+      const yInit = async () => {
+        return await new Promise((res, rej) => {
+          YaGames
+            .init()
+            .then((sdk) => {
+              subscribeToLifecycleCallbacks();
+              return res(sdk);
+            })
+            .catch((err) => {
+              return rej(err);
+            });
+        });
+      };
+
+      const subscribeToLifecycleCallbacks = () => {
+        setOnFocusCallback(() => {
+          setTimeout(() => {
+            if (unityInstance) {
+              yandex2unity_onViewRestore(); // hack to minimize chance to trigger restore event before hide 
+            }
+          }, 100);
+        });
+
+        setOnUnfocusCallback(() => {
+          if (unityInstance) {
+            yandex2unity_onViewHide();
+          }
+        });
+      };
+      
+      const initSafeStorage = async () => {
+        return await new Promise((res, rej) => {
+          ysdk.getStorage()
+            .then((safeStorage) => {
+              Object.defineProperty(window, 'localStorage', { get: () => safeStorage })
+              return res();
+            })
+            .catch((err) => {
+              return rej(err);
+            });
+        });
+      };
+      
+      const getYPlayer = async () => {
+        return await new Promise((res, rej) => {
+          ysdk
+            .getPlayer({ scopes: false })
+            .then((player) => {
+              return res(player);
+            })
+            .catch((err) => {
+              return rej(err);
+            });
+        });
+      };
+      
+      const waitForUnityGameReady = async () => {
+        const waitPredicate = async (res) => {
+          if (unityGameReady) {
+            await new Promise((_res, _rej) => {
+              setTimeout(() => {
+                return _res();
+              }, 100);
+            });
+            return res();
+          } else {
+            setTimeout(() => {
+              waitPredicate(res);
+            }, 100);
+          }
+        };
+        return new Promise(waitPredicate);
+      };
+      
+      // function to call from here to unity
+      // bridge: yandex -> unity
+      const yandex2unity_onSdkInit = () => {
+        const payload = {};
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnSdkInit",
+                JSON.stringify(payload),
+        );
+      };
+      
+      const yandex2unity_onSdkReady = async () => {
+        const playerData = yplayer.getMode() !== "lite" ? (await yplayer.getData()) : {};
+        const payload = {
+          lang: ysdk.environment.i18n.lang,
+          playerAuthorized: yplayer.getMode() !== "lite",
+          playerData: playerData,
+        };
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnSdkReady", 
+                JSON.stringify(payload),
+        );
+      };
+
+      const yandex2unity_onFullscreenAdvOpen = () => {
+        const payload = {};
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnFullscreenAdvOpen",
+                JSON.stringify(payload),
+        );
+      };
+      
+      const yandex2unity_onFullscreenAdvClose = () => {
+        const payload = {};
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnFullscreenAdvClose",
+                JSON.stringify(payload),
+        );
+      };
+
+      const yandex2unity_onRewardedAdvOpen = () => {
+        const payload = {};
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnRewardedAdvOpen",
+                JSON.stringify(payload),
+        );
+      };
+
+      const yandex2unity_onRewardedAdvClose = (rewarded) => {
+        const payload = {
+          rewarded: rewarded,
+        };
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnRewardedAdvClose",
+                JSON.stringify(payload),
+        );
+      };
+      
+      const yandex2unity_onPlayerDataReceive = (data) => {
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnPlayerDataReceive",
+                JSON.stringify(data),
+        );
+      };
+
+      const yandex2unity_onViewHide = () => {
+        unityInstance.SendMessage("YandexUnityBridge", "Yandex2Unity_OnViewHide");
+      };
+
+      const yandex2unity_onViewRestore = () => {
+        unityInstance.SendMessage("YandexUnityBridge", "Yandex2Unity_OnViewRestore");
+      };
+
+      // functions to call from jslib (unity)
+      // bridge: unity -> yandex
+      const unity2yandex_onGameReady = () => {
+        ysdk.features.LoadingAPI?.ready();
+        unityGameReady = true;
+      };
+      
+      const unity2yandex_openAuthDialog = () => {
+        if (yplayer.getMode() === "lite") {
+          ysdk.auth.openAuthDialog().then(async () => {
+            yplayer = await getYPlayer();
+          })
+          .catch((err) => {
+            console.log("Open auth dialog error: " + err);
+          });
+        }
+      };
+      
+      const unity2yandex_showFullscreenAdv = () => {
+        ysdk.adv.showFullscreenAdv({
+          callbacks: {
+            onOpen: () => {
+              yandex2unity_onFullscreenAdvOpen();
+            },
+            onClose: () => {
+              yandex2unity_onFullscreenAdvClose();
+            },
+          }
+        })
+      };
+      
+      const unity2yandex_showRewardedAdv = () => {
+        let rewarded = false;
+        ysdk.adv.showRewardedVideo({
+          callbacks: {
+            onOpen: () => {
+              yandex2unity_onRewardedAdvOpen();
+            },
+            onRewarded: () => {
+              rewarded = true;
+            },
+            onClose: () => {
+              yandex2unity_onRewardedAdvClose(rewarded);
+            },
+          }
+        })
+      };
+
+      const unity2yandex_setPlayerData = (data, flush) => {
+        yplayer.setData(JSON.parse(data), flush);
+        window.localStorage.setItem("bubbleBlast", data);
+      };
+
+      const unity2yandex_getPlayerData = (keys) => {
+        let localData;
+        try {
+          const localDataRaw = window.localStorage.getItem("bubbleBlast");
+          localData = JSON.parse(localDataRaw);
+        } catch { }
+        if (!localData || typeof localData !== "object") {
+          localData = {};
+        }
+        
+        yplayer
+          .getData()
+          .then((data) => {
+            const finalData = Object.assign({}, localData, data);
+            if (keys) {
+              for (let key of Object.keys(finalData)) {
+                if (!keys.includes(key)) {
+                  delete finalData[key];
+                }
+              } 
+            }
+            
+            yandex2unity_onPlayerDataReceive(finalData);
+          });
+      };
+      
+      const unity2yandex_setLeaderboardScore = (leaderboardName, score) => {
+        ysdk.isAvailableMethod('leaderboards.setLeaderboardScore')
+          .then((isAvailable) => {
+            if (isAvailable) {
+              ysdk.getLeaderboards()
+                .then(lb => {
+                  lb.setLeaderboardScore(leaderboardName, score);
+                });
+            } else {
+              console.log("setLeaderboardScore method is unavailable");
+            }
+          })
+          .catch((err) => {
+            console.log("setLeaderboardScore method check availability error: " + err);
+          });
+      };
+
+      // Yandex flow
+      
+      let unityGameReady = false;
+      let ysdk;
+      let yplayer;
+
+      const initializeFlow = async () => {
+        await waitForUnityInstance();
+        console.log("Unity instance ready");
+
+        ysdk = await yInit();
+        await yandex2unity_onSdkInit();
+        console.log("Yandex sdk initialized");
+
+        await initSafeStorage();
+        console.log("Safe storage initialized");
+
+        yplayer = await getYPlayer();
+        console.log("Yandex player received");
+
+        await waitForUnityGameReady();
+        console.log("Unity game ready");
+
+        await yandex2unity_onSdkReady();
+        console.log("Yandex sdk ready");
+      };
+      
+      initializeFlow();
+    </script>
+  </body>
+</html>

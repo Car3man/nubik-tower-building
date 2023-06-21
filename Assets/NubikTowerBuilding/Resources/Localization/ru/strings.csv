@@ -1,0 +1,16 @@
+id,ru
+btn_play,Играть
+btn_yes,Да
+btn_no,Нет
+btn_home,Домой
+btn_again,Заного
+btn_done,Готово
+,
+lbl_loading,Загрузка
+lbl_game_over,Игра окончена
+lbl_settings,Настройки
+lbl_music,Музыка
+lbl_sounds,Звуки
+lbl_dont_show_anymore,Не показывать больше
+lbl_invite_friends_message,Пригласите своих друзей и играйте вместе!
+lbl_do_u_like_game,Понравилась игра?

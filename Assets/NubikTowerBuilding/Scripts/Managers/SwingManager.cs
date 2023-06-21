@@ -1,4 +1,3 @@
-using System;
 using NubikTowerBuilding.Behaviours;
 using NubikTowerBuilding.Models;
 using NubikTowerBuilding.Utility;
@@ -58,8 +57,8 @@ namespace NubikTowerBuilding.Managers
             
             if (_tower.GetHeight() >= 20)
             {
-                _targetSwingAmplitude = 20 * 0.2f;
-                _targetSwingFrequency = 1.5f + Mathf.Max(0f, (_tower.GetHeight() - 10) * 0.03f);
+                _targetSwingAmplitude = 20 * 0.25f;
+                _targetSwingFrequency = 1.5f + Mathf.Max(0f, (_tower.GetHeight() - 10) * 0.04f);
             }
             else if (_tower.GetHeight() >= 5)
             {

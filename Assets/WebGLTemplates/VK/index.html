@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+
+    <script src="winfocus.min.js"></script>
+    <!-- VK Games SDK -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+  </head>
+  <body class="{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}">
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+    <div id="loading-cover" style="display:none;">
+      <div id="unity-loading-bar">
+        <div id="unity-logo"><img src="logo.png"></div>
+        <!-- <div id="unity-progress-bar-empty" style="display: none;">
+          <div id="unity-progress-bar-full"></div>
+        </div> -->
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <div id="unity-fullscreen-button" style="display: none;"></div>
+    <script>
+      let unityInstance;
+      
+      const buildUrl = "Build";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      const config = {
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+        memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+      };
+
+      const container = document.querySelector("#unity-container");
+      const canvas = document.querySelector("#unity-canvas");
+      const loadingCover = document.querySelector("#loading-cover");
+      // const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
+      // const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      const fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      const spinner = document.querySelector('.spinner');
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        // config.devicePixelRatio = 1;
+      }
+      loadingCover.style.display = "";
+
+      const script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+        }).then((instance) => {
+          unityInstance = instance;
+          spinner.style.display = "none";
+          loadingCover.style.display = "none";
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+
+      // VK implementation
+      
+      const waitForUnityInstance = async () => {
+        const waitPredicate = (res) => {
+          if (unityInstance) {
+            return res();
+          } else {
+            setTimeout(() => {
+              waitPredicate(res);
+            }, 100);
+          }
+        };
+        return new Promise(waitPredicate);
+      };
+      
+      const vkInit = async () => {
+        return await new Promise((res, rej) => {
+          vkBridge
+            .send("VKWebAppInit")
+            .then((data) => {
+              if (data.result) {
+                subscribeToLifecycleCallbacks();
+                const lang = langInt2LangCode(getLaunchParameter("language"));
+                const platform = getLaunchParameter("platform");
+                return res({
+                  lang: lang,
+                  platform: platform,
+                });
+              } else {
+                return rej();
+              }
+            })
+            .catch((err) => {
+              return rej(err);
+            });
+        });
+      };
+      
+      const subscribeToLifecycleCallbacks = () => {
+        setOnFocusCallback(() => {
+          setTimeout(() => {
+            if (unityInstance) {
+              vk2unity_onViewRestore(); // hack to minimize chance to trigger restore event before hide 
+            }
+          }, 100);
+        });
+
+        setOnUnfocusCallback(() => {
+          if (unityInstance) {
+            vk2unity_onViewHide();
+          }
+        });
+        
+        // doesn't work properly
+        // vkBridge.subscribe((e) => {
+        //   if (e.detail.type === "VKWebAppViewHide") {
+        //     vk2unity_onViewHide();
+        //   } else if (e.detail.type === "VKWebAppViewRestore") {
+        //     setTimeout(() => {
+        //       vk2unity_onViewRestore(); // hack to minimize chance to trigger restore event before hide
+        //     }, 100);
+        //   }
+        // });
+      };
+
+      // function to call from here to unity
+      // bridge: vk -> unity
+      const vk2unity_onSdkInit = (lang) => {
+        const payload = {
+          lang: lang,
+        };
+        unityInstance.SendMessage(
+          "VKUnityBridge",
+          "VK2Unity_OnSdkInit",
+          JSON.stringify(payload),
+        );
+      };
+
+      const vk2unity_onNativeAdsOpenRequest = (adFormat) => {
+        const payload = {
+          adFormat: adFormat,
+        };
+        unityInstance.SendMessage(
+          "VKUnityBridge",
+          "VK2Unity_OnNativeAdsOpenRequest",
+          JSON.stringify(payload),
+        );
+      };
+
+      const vk2unity_onNativeAdsOpenResult = (adFormat, result) => {
+        const payload = {
+          adFormat: adFormat,
+          result: result,
+        };
+        unityInstance.SendMessage(
+          "VKUnityBridge",
+          "VK2Unity_OnNativeAdsOpenResult",
+          JSON.stringify(payload),
+        );
+      };
+
+      const vk2unity_onPlayerDataReceive = (data) => {
+        unityInstance.SendMessage(
+          "VKUnityBridge",
+          "VK2Unity_OnPlayerDataReceive",
+          JSON.stringify(data),
+        );
+      };
+
+      const vk2unity_onViewHide = () => {
+        unityInstance.SendMessage("VKUnityBridge", "VK2Unity_OnViewHide");
+      };
+
+      const vk2unity_onViewRestore = () => {
+        unityInstance.SendMessage("VKUnityBridge", "VK2Unity_OnViewRestore");
+      };
+      
+      // functions to call from jslib (unity)
+      // bridge: unity -> vk
+
+      const unity2vk_showNativeAds = (adFormat) => {
+        vk2unity_onNativeAdsOpenRequest(adFormat);
+        
+        vkBridge
+          .send('VKWebAppShowNativeAds', {
+            ad_format: adFormat,
+          })
+          .then((data) => {
+            setTimeout(() => {
+              vk2unity_onNativeAdsOpenResult(adFormat, data.result); // hack to minimize chance to trigger result event before request
+            }, 100);
+          })
+          .catch((showAdsError) => {
+            console.log("VKWebAppShowNativeAds, error: ");
+            console.log(showAdsError);
+            setTimeout(() => {
+              vk2unity_onNativeAdsOpenResult(adFormat, false); // hack to minimize chance to trigger result event before request
+            }, 100);
+          });
+      };
+      
+      const unity2vk_setPlayerData = (key, value) => {
+        vkBridge
+          .send("VKWebAppStorageSet", {
+            key: key,
+            value: value
+          });
+
+        let localData;
+        try {
+          const localDataRaw = window.localStorage.getItem("bubbleBlast");
+          localData = JSON.parse(localDataRaw);
+        } catch { }
+        if (!localData || typeof localData !== "object") {
+          localData = {};
+        }
+        localData[key] = value;
+        window.localStorage.setItem("bubbleBlast", localData);
+      };
+
+      const unity2vk_getPlayerData = (keys) => {
+        let localData;
+        try {
+          const localDataRaw = window.localStorage.getItem("bubbleBlast");
+          localData = JSON.parse(localDataRaw);
+        } catch { }
+        if (!localData || typeof localData !== "object") {
+          localData = {};
+        }
+
+        for (let key of Object.keys(localData)) {
+          if (!keys.includes(key)) {
+            delete localData[key];
+          }
+        }
+
+        vkBridge
+          .send('VKWebAppStorageGetKeys', {
+            count: 100,
+            offset: 0
+          })
+          .then((getKeysData) => {
+            if (getKeysData.keys) {
+              vkBridge
+                .send('VKWebAppStorageGet', {
+                  keys: getKeysData.keys
+                })
+                .then((data) => {
+                  if (data.keys) {
+                    console.log("VKWebAppStorageGet, success");
+                    const finalData = data.keys.reduce((result, item) => {
+                      result[item.key] = item.value;
+                      return result;
+                    }, localData);
+                    vk2unity_onPlayerDataReceive(finalData);
+                  } else {
+                    console.log("VKWebAppStorageGet, fail");
+                    vk2unity_onPlayerDataReceive(localData);
+                  }
+                })
+                .catch((storageGetError) => {
+                  console.log("VKWebAppStorageGet, error: ");
+                  console.log(storageGetError);
+                  vk2unity_onPlayerDataReceive(localData);
+                });
+            }
+          })
+          .catch((storageGetKeysError) => {
+            console.log("VKWebAppStorageGetKeys, error: ");
+            console.log(storageGetKeysError);
+          });
+      };
+
+      const unity2vk_showLeaderboardBox = () => {
+        vkBridge
+          .send("VKWebAppShowLeaderBoardBox");
+      };
+
+      const unity2vk_updateAndShowLeaderboardBox = (userResult) => {
+        vkBridge
+          .send("VKWebAppShowLeaderBoardBox", {
+            user_result: userResult,
+          });
+      };
+      
+      const unity2vk_addToFavorites = () => {
+        vkBridge.send("VKWebAppAddToFavorites");
+      };
+      
+      const unity2vk_showInviteBox = () => {
+        vkBridge.send("VKWebAppShowInviteBox");
+      };
+
+      // utility functions
+      const getLaunchParameter = (name) => {
+        return new URLSearchParams(window.location.href).get(name);
+      }
+      
+      const langInt2LangCode = (langInt) => {
+        switch (langInt) {
+          case 0: return "ru";
+          case 1: return "uk";
+          case 2: return "be";
+          case 3: return "en";
+          case 4: return "es";
+          case 5: return "fi";
+          case 6: return "de";
+          case 7: return "it";
+          default: return "ru";
+        }
+      };
+
+      // VK flow
+      
+      const initializeFlow = async () => {
+        await waitForUnityInstance();
+        console.log("Unity instance ready");
+        
+        const {lang, platform} = await vkInit();
+        await vk2unity_onSdkInit(lang, platform);
+        console.log("VK sdk initialized, lang: " + lang + " ,platform: " + platform);
+      };
+
+      initializeFlow();
+    </script>
+  </body>
+</html>

@@ -1,5 +1,8 @@
 using Cysharp.Threading.Tasks;
 using KlopoffGames.Core.Windows;
+#if VK_GAMES
+using KlopoffGames.WebPlatforms.VK;
+#endif
 using NubikTowerBuilding.Managers;
 using NubikTowerBuilding.Models;
 using NubikTowerBuilding.Services;
@@ -16,9 +19,13 @@ namespace NubikTowerBuilding.Ui.Windows
         [Inject] private GameManager _game;
         [Inject] private BuildManager _buildManager;
         [Inject] private BuildingPurchaseManager _buildingPurchaseManager;
-        [Inject] private UserCoinsService _userCoinsService; 
+        [Inject] private UserCoinsService _userCoinsService;
+#if VK_GAMES
+        [Inject] private VKManager _vk;
+#endif
         [SerializeField] private Button buttonSettings;
-        [SerializeField] private Button buttonStart;
+        [SerializeField] private Button buttonLeaderboard;
+        [SerializeField] private Button buttonPlay;
         [SerializeField] private Button buttonChangeBlockLeft;
         [SerializeField] private Button buttonChangeBlockRight;
         [SerializeField] private Button buttonPurchaseBlock;
@@ -27,8 +34,15 @@ namespace NubikTowerBuilding.Ui.Windows
 
         public override UniTask OnCreate()
         {
+#if VK_GAMES
+            buttonLeaderboard.gameObject.SetActive(true);
+#else
+            buttonLeaderboard.gameObject.SetActive(false);
+#endif
+            
             buttonSettings.onClick.AddListener(OnButtonSettingsClick);
-            buttonStart.onClick.AddListener(OnButtonStartClick);
+            buttonLeaderboard.onClick.AddListener(OnButtonLeaderboardClick);
+            buttonPlay.onClick.AddListener(OnButtonPlayClick);
             buttonChangeBlockLeft.onClick.AddListener(OnButtonChangeBlockLeftClick);
             buttonChangeBlockRight.onClick.AddListener(OnButtonChangeBlockRightClick);
             buttonPurchaseBlock.onClick.AddListener(OnButtonPurchaseBlockClick);
@@ -43,7 +57,8 @@ namespace NubikTowerBuilding.Ui.Windows
         public override UniTask OnHide()
         {
             buttonSettings.onClick.RemoveAllListeners();
-            buttonStart.onClick.RemoveAllListeners();
+            buttonLeaderboard.onClick.RemoveAllListeners();
+            buttonPlay.onClick.RemoveAllListeners();
             buttonChangeBlockLeft.onClick.RemoveAllListeners();
             buttonChangeBlockRight.onClick.RemoveAllListeners();
             buttonPurchaseBlock.onClick.RemoveAllListeners();
@@ -65,7 +80,7 @@ namespace NubikTowerBuilding.Ui.Windows
         {
             var currBuilding = _buildManager.GetBuildingBlockType();
             var isCurrBuildingPurchased = _buildingPurchaseManager.IsPurchased(currBuilding);
-            buttonStart.interactable = isCurrBuildingPurchased;
+            buttonPlay.interactable = isCurrBuildingPurchased;
         }
         
         private void OnCoinsChange(int coins)
@@ -78,7 +93,14 @@ namespace NubikTowerBuilding.Ui.Windows
             _windows.CreateWindow<SettingsWindow>("Windows/Game");
         }
 
-        private void OnButtonStartClick()
+        private void OnButtonLeaderboardClick()
+        {
+#if VK_GAMES
+            _vk.ShowLeaderboardBox();
+#endif
+        }
+
+        private void OnButtonPlayClick()
         {
             Hide();
             _game.StartGame();

@@ -5,6 +5,7 @@ using KlopoffGames.Core.Audio;
 using NubikTowerBuilding.Behaviours;
 using NubikTowerBuilding.Models;
 using NubikTowerBuilding.Spawners;
+using NubikTowerBuilding.Ui;
 using UnityEngine;
 using Zenject;
 
@@ -16,6 +17,7 @@ namespace NubikTowerBuilding.Managers
         [Inject] private BuildingBlockSpawner _buildingBlockSpawner;
         [Inject] private Crane _crane;
         [Inject] private Tower _tower;
+        [SerializeField] private UiInputTrigger buildTrigger;
 
         [SerializeField] private Vector2 startCraneSwingAmplitude;
         [SerializeField] private Vector2 startCraneSwingFrequency;
@@ -99,6 +101,11 @@ namespace NubikTowerBuilding.Managers
             
             if (!_waitForDropAnimation && _currBuildingBlock != null && Input.GetMouseButtonUp(0))
             {
+                if (!buildTrigger.IsOver)
+                {
+                    return;
+                }
+                
                 DropBlock();
             }
         }
@@ -191,7 +198,7 @@ namespace NubikTowerBuilding.Managers
             if (result.IsSuccess)
             {
                 OnSuccessBuild?.Invoke(result.ConnectedBlock, result.IsPerfect);
-                _audio.PlaySound("SuccessBuild", false, 1f, 1f);
+                _audio.PlaySound("SuccessBuild", false, 0.25f, 1f);
                 if (result.IsPerfect)
                 {
                     _audio.PlaySound("PerfectBuild", false, 1f, 1f);
