@@ -99,7 +99,7 @@ namespace NubikTowerBuilding.Managers
                 return;
             }
             
-            if (!_waitForDropAnimation && _currBuildingBlock != null && Input.GetMouseButtonUp(0))
+            if (!_waitForDropAnimation && _currBuildingBlock != null && Input.GetMouseButtonDown(0))
             {
                 if (!buildTrigger.IsOver)
                 {
