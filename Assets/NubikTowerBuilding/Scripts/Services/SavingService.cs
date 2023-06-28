@@ -23,8 +23,10 @@ namespace NubikTowerBuilding.Services
             keys.Add("is_ftue");
             keys.Add("music_volume");
             keys.Add("sound_volume");
+            keys.Add("game_run_counter");
             keys.Add("last_block_played");
             keys.Add("coins");
+            keys.Add("best_score");
             for (int i = 0; i < (int)BuildingBlockType.MaxNbr; i++)
             {
                 keys.Add($"purchased_building_block_{i}");
@@ -50,6 +52,16 @@ namespace NubikTowerBuilding.Services
         public void SetIsFTUE(bool value)
         {
             _saving.SetBool("is_ftue", value);
+        }
+        
+        public int GetGameRunCounter()
+        {
+            return _saving.GetInt("game_run_counter", 0);
+        }
+
+        public void SetGameRunCounter(int counter)
+        {
+            _saving.SetInt("game_run_counter", counter);
         }
 
         public float GetMusicVolume()
@@ -80,6 +92,16 @@ namespace NubikTowerBuilding.Services
         public void SetCoins(int coins)
         {
             _saving.SetInt("coins", coins);
+        }
+        
+        public int GetBestScore()
+        {
+            return _saving.GetInt("best_score", 0);
+        }
+
+        public void SetBestScore(int coins)
+        {
+            _saving.SetInt("best_score", coins);
         }
         
         public bool GetIsBuildingBlockPurchased(BuildingBlockType buildingBlockType)

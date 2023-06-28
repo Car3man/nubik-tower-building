@@ -1,6 +1,6 @@
 using Cysharp.Threading.Tasks;
 using KlopoffGames.Core.Windows;
-#if VK_GAMES
+#if VK_GAMES && !UNITY_EDITOR
 using KlopoffGames.WebPlatforms.VK;
 #endif
 using NubikTowerBuilding.Managers;
@@ -20,11 +20,13 @@ namespace NubikTowerBuilding.Ui.Windows
         [Inject] private BuildManager _buildManager;
         [Inject] private BuildingPurchaseManager _buildingPurchaseManager;
         [Inject] private UserCoinsService _userCoinsService;
-#if VK_GAMES
+#if VK_GAMES && !UNITY_EDITOR
+        [Inject] private SavingService _savingService;
         [Inject] private VKManager _vk;
 #endif
         [SerializeField] private Button buttonSettings;
         [SerializeField] private Button buttonLeaderboard;
+        [SerializeField] private Button buttonShare;
         [SerializeField] private Button buttonPlay;
         [SerializeField] private Button buttonChangeBlockLeft;
         [SerializeField] private Button buttonChangeBlockRight;
@@ -34,14 +36,25 @@ namespace NubikTowerBuilding.Ui.Windows
 
         public override UniTask OnCreate()
         {
-#if VK_GAMES
-            buttonLeaderboard.gameObject.SetActive(true);
+#if VK_GAMES && !UNITY_EDITOR
+            if (_vk.Platform != "web")
+            {
+                buttonLeaderboard.gameObject.SetActive(true);
+            }
+            else
+            {
+                buttonLeaderboard.gameObject.SetActive(false);
+            }
+            
+            buttonShare.gameObject.SetActive(true);
 #else
             buttonLeaderboard.gameObject.SetActive(false);
+            buttonShare.gameObject.SetActive(false);
 #endif
             
             buttonSettings.onClick.AddListener(OnButtonSettingsClick);
             buttonLeaderboard.onClick.AddListener(OnButtonLeaderboardClick);
+            buttonShare.onClick.AddListener(OnButtonShareClick);
             buttonPlay.onClick.AddListener(OnButtonPlayClick);
             buttonChangeBlockLeft.onClick.AddListener(OnButtonChangeBlockLeftClick);
             buttonChangeBlockRight.onClick.AddListener(OnButtonChangeBlockRightClick);
@@ -58,6 +71,7 @@ namespace NubikTowerBuilding.Ui.Windows
         {
             buttonSettings.onClick.RemoveAllListeners();
             buttonLeaderboard.onClick.RemoveAllListeners();
+            buttonShare.onClick.RemoveAllListeners();
             buttonPlay.onClick.RemoveAllListeners();
             buttonChangeBlockLeft.onClick.RemoveAllListeners();
             buttonChangeBlockRight.onClick.RemoveAllListeners();
@@ -95,8 +109,15 @@ namespace NubikTowerBuilding.Ui.Windows
 
         private void OnButtonLeaderboardClick()
         {
-#if VK_GAMES
-            _vk.ShowLeaderboardBox();
+#if VK_GAMES && !UNITY_EDITOR
+            _vk.UpdateAndShowLeaderboardBox(_savingService.GetBestScore());
+#endif
+        }
+
+        private void OnButtonShareClick()
+        {
+#if VK_GAMES && !UNITY_EDITOR
+            _vk.ShowInviteBox();
 #endif
         }
 

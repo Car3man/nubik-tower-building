@@ -14,6 +14,7 @@
         public delegate void RewardedAdCloseDelegate(bool rewarded);
         public event RewardedAdCloseDelegate OnRewardedAdClose;
         
+        float LastAdRequestTime { get; }
         bool IsAdShowing { get; }
         void ShowInterstitialAd();
         void ShowRewardedAd();

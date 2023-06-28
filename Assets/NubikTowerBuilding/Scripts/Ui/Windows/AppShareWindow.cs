@@ -3,6 +3,9 @@ using NubikTowerBuilding.Services;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
+#if VK_GAMES && !UNITY_EDITOR
+using KlopoffGames.WebPlatforms.VK;
+#endif
 
 namespace NubikTowerBuilding.Ui.Windows
 {

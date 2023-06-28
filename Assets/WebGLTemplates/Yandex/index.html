@@ -18,7 +18,6 @@
     </div>
     <div id="loading-cover" style="display:none;">
       <div id="unity-loading-bar">
-        <div id="unity-logo"><img src="logo.png"></div>
         <!-- <div id="unity-progress-bar-empty" style="display: none;">
           <div id="unity-progress-bar-full"></div>
         </div> -->
@@ -293,13 +292,13 @@
 
       const unity2yandex_setPlayerData = (data, flush) => {
         yplayer.setData(JSON.parse(data), flush);
-        window.localStorage.setItem("bubbleBlast", data);
+        window.localStorage.setItem("nubikTowerBuilding", data);
       };
 
       const unity2yandex_getPlayerData = (keys) => {
         let localData;
         try {
-          const localDataRaw = window.localStorage.getItem("bubbleBlast");
+          const localDataRaw = window.localStorage.getItem("nubikTowerBuilding");
           localData = JSON.parse(localDataRaw);
         } catch { }
         if (!localData || typeof localData !== "object") {

@@ -1,4 +1,5 @@
 ﻿using KlopoffGames.Core.Ads;
+using UnityEngine;
 
 namespace KlopoffGames.WebPlatforms.Yandex
 {
@@ -6,6 +7,7 @@ namespace KlopoffGames.WebPlatforms.Yandex
     {
         private readonly YandexManager _yandex;
 
+        public float LastAdRequestTime { get; private set; } = float.MinValue;
         public bool IsAdShowing { get; private set; }
 
         public event IAdvertisement.InterstitialAdOpenDelegate OnInterstitialAdOpen;
@@ -27,11 +29,13 @@ namespace KlopoffGames.WebPlatforms.Yandex
 
         public void ShowInterstitialAd()
         {
+            LastAdRequestTime = Time.time;
             _yandex.ShowFullscreenAdv();
         }
 
         public void ShowRewardedAd()
         {
+            LastAdRequestTime = Time.time;
             _yandex.ShowRewardedAdv();
         }
         

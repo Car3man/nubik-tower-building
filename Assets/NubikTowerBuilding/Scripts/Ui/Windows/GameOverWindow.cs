@@ -13,7 +13,11 @@ namespace NubikTowerBuilding.Ui.Windows
     {
         [Inject] private IAdvertisement _ads;
         [Inject] private GameManager _game;
+        [Inject] private ScoreManager _score;
+        [Inject] private SavingService _saving;
         [Inject] private UserCoinsService _userCoinsService;
+        [SerializeField] private TextMeshProUGUI scoreText;
+        [SerializeField] private TextMeshProUGUI bestScoreText;
         [SerializeField] private TextMeshProUGUI towerHeightText;
         [SerializeField] private TextMeshProUGUI towerPopulationText;
         [SerializeField] private TextMeshProUGUI earnedCoinsText;
@@ -31,6 +35,8 @@ namespace NubikTowerBuilding.Ui.Windows
             buttonHome.onClick.AddListener(OnHomeButtonClick);
             buttonCoinsX2.onClick.AddListener(OnHomeButtonCoinsX2);
 
+            scoreText.text = $"{_score.GetScore()}";
+            bestScoreText.text = $"{_saving.GetBestScore()}";
             towerHeightText.text = _game.ReachedHeight.ToString();
             towerPopulationText.text = _game.ReachedPopulation.ToString();
             earnedCoinsText.text = _game.EarnedCoins.ToString();
@@ -56,14 +62,46 @@ namespace NubikTowerBuilding.Ui.Windows
 
         private void OnAgainButtonClick()
         {
-            Hide();
-            _game.PlayAgain();
+            if (Time.time - _ads.LastAdRequestTime >= 60f * 2f)
+            {
+                _ads.OnInterstitialAdClose += InterstitialAdClose;
+                _ads.ShowInterstitialAd();
+            
+                void InterstitialAdClose()
+                {
+                    _ads.OnInterstitialAdClose -= InterstitialAdClose;
+                
+                    Hide();
+                    _game.PlayAgain();
+                }
+            }
+            else
+            {
+                Hide();
+                _game.PlayAgain();
+            }
         }
 
         private void OnHomeButtonClick()
         {
-            Hide();
-            _game.BackToLobby();
+            if (Time.time - _ads.LastAdRequestTime >= 60f * 2f)
+            {
+                _ads.OnInterstitialAdClose += InterstitialAdClose;
+                _ads.ShowInterstitialAd();
+
+                void InterstitialAdClose()
+                {
+                    _ads.OnInterstitialAdClose -= InterstitialAdClose;
+
+                    Hide();
+                    _game.BackToLobby();
+                }
+            }
+            else
+            {
+                Hide();
+                _game.BackToLobby();
+            }
         }
 
         private void OnHomeButtonCoinsX2()

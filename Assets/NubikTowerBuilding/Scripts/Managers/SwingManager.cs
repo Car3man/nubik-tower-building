@@ -62,7 +62,7 @@ namespace NubikTowerBuilding.Managers
             }
             else if (_tower.GetHeight() >= 5)
             {
-                _targetSwingAmplitude = _tower.GetHeight() * 0.15f;
+                _targetSwingAmplitude = _tower.GetHeight() * 0.25f;
             }
 
             if (_tower.GetHeight() > 1)

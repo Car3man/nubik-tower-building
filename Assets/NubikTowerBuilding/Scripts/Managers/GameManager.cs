@@ -1,6 +1,12 @@
 using Cysharp.Threading.Tasks;
 using KlopoffGames.Core.Audio;
 using KlopoffGames.Core.Windows;
+#if VK_GAMES && !UNITY_EDITOR
+using KlopoffGames.WebPlatforms.VK;
+#endif
+#if YANDEX_GAMES && !UNITY_EDITOR
+using KlopoffGames.WebPlatforms.Yandex;
+#endif
 using NubikTowerBuilding.Behaviours;
 using NubikTowerBuilding.Services;
 using NubikTowerBuilding.Ui.Windows;
@@ -22,6 +28,12 @@ namespace NubikTowerBuilding.Managers
         [Inject] private GameOverManager _gameOverManager;
         [Inject] private SavingService _savingService;
         [Inject] private UserCoinsService _userCoinsService;
+#if YANDEX_GAMES && !UNITY_EDITOR
+        [Inject] private YandexManager _yandex;
+#endif
+#if VK_GAMES && !UNITY_EDITOR
+        [Inject] private VKManager _vk;
+#endif
         [SerializeField] private GameObject inGameCanvas;
 
         private bool _isGameStarted;
@@ -36,6 +48,7 @@ namespace NubikTowerBuilding.Managers
         public void StartGame()
         {
             OnGameStart();
+            _savingService.SetGameRunCounter(_savingService.GetGameRunCounter() + 1);
         }
 
         public void PlayAgain()
@@ -45,7 +58,7 @@ namespace NubikTowerBuilding.Managers
 
         public void BackToLobby()
         {
-            OnGameReady();
+            OnGameReady(true);
         }
 
         private void Start()
@@ -56,7 +69,7 @@ namespace NubikTowerBuilding.Managers
             _audio.PlayMusicIfNotSame("MainTheme", 0.1f);
             _buildManager.SetBuildingBlockType(_savingService.GetLastBlockPlayed());
             
-            OnGameReady();
+            OnGameReady(false);
         }
 
         private void CleanUpManagers()
@@ -87,11 +100,30 @@ namespace NubikTowerBuilding.Managers
             OnGameEnd();
         }
 
-        private void OnGameReady()
+        private void OnGameReady(bool fromGameRun)
         {
             CleanUpManagers();
             inGameCanvas.SetActive(false);
-            _windows.CreateWindow<LobbyGameWindow>("Windows/Game");
+
+            if (fromGameRun)
+            {
+                _windows.CreateWindow<LobbyGameWindow>("Windows/Game");
+                
+                CheckAppShare();
+            }
+            else
+            {
+                var isFirstTime = _savingService.GetIsFTUE();
+                if (isFirstTime)
+                {
+                    StartGame();
+                    _savingService.SetIsFTUE(false);
+                }
+                else
+                {
+                    _windows.CreateWindow<LobbyGameWindow>("Windows/Game");
+                }
+            }
         }
 
         private async void OnGameStart()
@@ -108,11 +140,47 @@ namespace NubikTowerBuilding.Managers
             _savingService.SetLastBlockPlayed(_buildManager.GetBuildingBlockType());
         }
 
-        private void OnGameEnd()
+#pragma warning disable CS1998
+        private async void OnGameEnd()
+#pragma warning restore CS1998
         {
+            var score = _scoreManager.GetScore();
+            var bestScore = _savingService.GetBestScore();
+            if (score > bestScore)
+            {
+                _savingService.SetBestScore(score);
+                
+#if YANDEX_GAMES && !UNITY_EDITOR
+                _yandex.SetLeaderboardScore("defaultLeaderboard", score);
+#endif
+
+#if VK_GAMES && !UNITY_EDITOR
+                await UniTask.Delay(System.TimeSpan.FromSeconds(2.5f));
+                _vk.UpdateAndShowLeaderboardBox(score);
+#endif
+            }
+
             _userCoinsService.AddCoins(EarnedCoins);
+            
             _windows.CreateWindow<GameOverWindow>("Windows/Game");
             _buildManager.SetCanBuild(false);
+        }
+
+        private void CheckAppShare()
+        {
+            if (_savingService.GetIsAppShareDisabled())
+            {
+                // ReSharper disable once RedundantJumpStatement
+                return;
+            }
+
+#if VK_GAMES && !UNITY_EDITOR
+            if (_savingService.GetGameRunCounter() == 2 ||
+                (_savingService.GetGameRunCounter() + 2) % 5 == 0)
+            {
+                _windows.CreateWindow<AppShareWindow>("Windows/Game");
+            }
+#endif
         }
     }
 }

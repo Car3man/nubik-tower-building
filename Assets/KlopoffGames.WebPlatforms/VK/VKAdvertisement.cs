@@ -1,11 +1,13 @@
 ﻿using KlopoffGames.Core.Ads;
+using UnityEngine;
 
 namespace KlopoffGames.WebPlatforms.VK
 {
     public class VKAdvertisement : IAdvertisement
     {
         private readonly VKManager _vk;
-        
+
+        public float LastAdRequestTime { get; private set; } = float.MinValue;
         public bool IsAdShowing { get; private set; }
 
         public event IAdvertisement.InterstitialAdOpenDelegate OnInterstitialAdOpen;
@@ -25,11 +27,13 @@ namespace KlopoffGames.WebPlatforms.VK
 
         public void ShowInterstitialAd()
         {
+            LastAdRequestTime = Time.time;
             _vk.ShowNativeAds("interstitial");
         }
 
         public void ShowRewardedAd()
         {
+            LastAdRequestTime = Time.time;
             _vk.ShowNativeAds("reward");
         }
         

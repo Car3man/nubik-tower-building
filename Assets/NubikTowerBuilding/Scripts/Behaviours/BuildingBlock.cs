@@ -39,7 +39,7 @@ namespace NubikTowerBuilding.Behaviours
             return body;
         }
         
-        public AttachBuildingBlockResult AttachBuildingBlock(BuildingBlock buildingBlock)
+        public AttachBuildingBlockResult AttachBuildingBlock(BuildingBlock buildingBlock, float maxAttachError)
         {
             if (_attachedBuildingBlock != null)
             {
@@ -64,7 +64,7 @@ namespace NubikTowerBuilding.Behaviours
             var buildingBlockBody = _attachedBuildingBlock.GetBody();
             var buildingBlockLocPos = _attachedBuildingBlock.transform.localPosition;
             
-            if (Mathf.Abs(buildingBlockLocPos.x) > blockWidth * 0.66f)
+            if (Mathf.Abs(buildingBlockLocPos.x) > maxAttachError)
             {
                 buildingBlockBody.AddForce(Vector3.right * buildingBlockLocPos.x * 1f, ForceMode.Impulse);
                 

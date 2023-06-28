@@ -99,13 +99,24 @@ namespace NubikTowerBuilding.Behaviours
         
         public void AddBuildingBlock(BuildingBlock buildingBlock)
         {
-            var result = IsEmpty() ?
-                _buildPlatform.AttachBuildingBlock(buildingBlock) :
-                _buildingBlocks[^1].AttachBuildingBlock(buildingBlock);
+            AttachBuildingBlockResult result;
+            
+            if (IsEmpty())
+            {
+                result = _buildPlatform.AttachBuildingBlock(buildingBlock);
+            }
+            else
+            {
+                var blockWidth = buildingBlock.GetDimensions().x;
+                var maxAttachError = Mathf.Clamp(blockWidth * 0.7f - GetHeight() * 0.015f, blockWidth * 0.4f, blockWidth * 0.7f);
+                result = _buildingBlocks[^1].AttachBuildingBlock(buildingBlock, maxAttachError);
+            }
+            
             if (result.IsSuccess)
             {
                 _buildingBlocks.Add(buildingBlock);
             }
+            
             OnAttachBuildingBlock?.Invoke(result);
         }
     }
