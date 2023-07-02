@@ -242,6 +242,17 @@
         unityInstance.SendMessage("YandexUnityBridge", "Yandex2Unity_OnViewRestore");
       };
 
+      const yandex2unity_onFocusStateReceived = (hasFocus) => {
+        const payload = {
+          hasFocus: hasFocus
+        };
+        unityInstance.SendMessage(
+                "YandexUnityBridge",
+                "Yandex2Unity_OnFocusStateReceived",
+                JSON.stringify(payload)
+        );
+      };
+
       // functions to call from jslib (unity)
       // bridge: unity -> yandex
       const unity2yandex_onGameReady = () => {
@@ -364,8 +375,17 @@
         await yandex2unity_onSdkReady();
         console.log("Yandex sdk ready");
       };
+
+      const observeFocusState = () => {
+        if (unityInstance) {
+          yandex2unity_onFocusStateReceived(_isFocus);
+        }
+
+        setTimeout(observeFocusState, 500);
+      };
       
       initializeFlow();
+      observeFocusState();
     </script>
   </body>
 </html>

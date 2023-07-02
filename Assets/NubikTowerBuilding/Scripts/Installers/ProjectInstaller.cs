@@ -44,16 +44,28 @@ namespace NubikTowerBuilding.Installers
                 .WithGameObjectName("YandexUnityBridge")
                 .AsSingle()
                 .NonLazy();
-            Container.Bind<YandexManager>().AsSingle().NonLazy();
-            Container.Bind<YandexAppFocusObserver>().AsSingle().NonLazy();
+            Container.Bind<YandexManager>()
+                .FromNew()
+                .AsSingle()
+                .NonLazy();
+            Container.BindInterfacesAndSelfTo<YandexAppFocusObserver>()
+                .FromNew()
+                .AsSingle()
+                .NonLazy();
 #elif VK_GAMES && !UNITY_EDITOR
             Container.Bind<UnityVKBridge>()
                 .FromNewComponentOnNewGameObject()
                 .WithGameObjectName("VKUnityBridge")
                 .AsSingle()
                 .NonLazy();
-            Container.Bind<VKManager>().AsSingle().NonLazy();
-            Container.Bind<VKAppFocusObserver>().AsSingle().NonLazy();
+            Container.Bind<VKManager>()
+                .FromNew()
+                .AsSingle()
+                .NonLazy();
+            Container.BindInterfacesAndSelfTo<VKAppFocusObserver>()
+                .FromNew()
+                .AsSingle()
+                .NonLazy();
 #elif LOCAL_WEBGL && !UNITY_EDITOR
             Container.Bind<UnityLocalWebGLBridge>()
                 .FromNewComponentOnNewGameObject()

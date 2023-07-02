@@ -1,18 +1,17 @@
 ﻿using KlopoffGames.Core.Ads;
 using KlopoffGames.Core.Audio;
+using Zenject;
 
 namespace KlopoffGames.WebPlatforms.VK
 {
-    public class VKAppFocusObserver
+    public class VKAppFocusObserver : ITickable
     {
         private readonly VKManager _vk;
         private readonly IAdvertisement _ads;
         private readonly AudioManager _audio;
-        
-        private bool _isFocus;
+
+        private bool _hasFocus;
         private bool _isAd;
-        private bool _savedMusicMute;
-        private bool _savedSoundMute;
 
         public VKAppFocusObserver(
             VKManager vk,
@@ -24,68 +23,34 @@ namespace KlopoffGames.WebPlatforms.VK
             _ads = ads;
             _audio = audio;
             
-            _savedMusicMute = _audio.MusicMute;
-            _savedSoundMute = _audio.SoundMute;
-            _isFocus = false;
+            _hasFocus = false;
             _isAd = false;
-            UpdateMute();
             
-            _vk.OnViewHide += OnViewHide;
-            _vk.OnViewRestore += OnViewRestore;
+            _vk.OnFocusStateReceived += OnFocusStateReceived;
             _ads.OnInterstitialAdOpen += OnAdsOpen;
             _ads.OnRewardedAdOpen += OnAdsOpen;
             _ads.OnInterstitialAdClose += OnAdsClose;
             _ads.OnRewardedAdClose += _ => { OnAdsClose(); };
         }
 
-        private void OnViewHide()
+        private void OnFocusStateReceived(bool hasFocus)
         {
-            if (_isFocus && !_isAd)
-            {
-                _savedMusicMute = _audio.MusicMute;
-                _savedSoundMute = _audio.SoundMute;
-            }
-
-            _isFocus = false;
-            UpdateMute();
-        }
-
-        private void OnViewRestore()
-        {
-            _isFocus = true;
-            UpdateMute();
+            _hasFocus = hasFocus;
         }
 
         private void OnAdsOpen()
         {
-            if (_isFocus && !_isAd)
-            {
-                _savedMusicMute = _audio.MusicMute;
-                _savedSoundMute = _audio.SoundMute;
-            }
-
             _isAd = true;
-            UpdateMute();
         }
 
         private void OnAdsClose()
         {
             _isAd = false;
-            UpdateMute();
         }
 
-        private void UpdateMute()
+        public void Tick()
         {
-            if (!_isFocus || _isAd)
-            {
-                _audio.MusicMute = true;
-                _audio.SoundMute = true;
-            }
-            else
-            {
-                _audio.MusicMute = _savedMusicMute;
-                _audio.SoundMute = _savedSoundMute;
-            }
+            _audio.Mute = !_hasFocus || _isAd;
         }
     }
 }

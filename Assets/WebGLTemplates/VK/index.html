@@ -191,6 +191,17 @@
       const vk2unity_onViewRestore = () => {
         unityInstance.SendMessage("VKUnityBridge", "VK2Unity_OnViewRestore");
       };
+
+      const vk2unity_onFocusStateReceived = (hasFocus) => {
+        const payload = {
+          hasFocus: hasFocus
+        };
+        unityInstance.SendMessage(
+                "VKUnityBridge",
+                "VK2Unity_OnFocusStateReceived",
+                JSON.stringify(payload)
+        );
+      };
       
       // functions to call from jslib (unity)
       // bridge: unity -> vk
@@ -339,7 +350,16 @@
         await vk2unity_onSdkInit(lang, platform);
       };
 
+      const observeFocusState = () => {
+        if (unityInstance) {
+          vk2unity_onFocusStateReceived(_isFocus);
+        }
+
+        setTimeout(observeFocusState, 500);
+      };
+
       initializeFlow();
+      observeFocusState();
     </script>
   </body>
 </html>

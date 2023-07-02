@@ -50,6 +50,9 @@ namespace KlopoffGames.WebPlatforms.VK
 
         public delegate void PlayerDataReceiveDelegate(Dictionary<string, object> playerData);
         public event PlayerDataReceiveDelegate OnPlayerDataReceive;
+        
+        public delegate void FocusStateReceivedDelegate(bool hasFocus);
+        public event FocusStateReceivedDelegate OnFocusStateReceived;
 
         public VKManager(
             UnityVKBridge bridge
@@ -71,6 +74,7 @@ namespace KlopoffGames.WebPlatforms.VK
             _bridge.OnNativeAdsOpenRequest += adFormat => { OnNativeAdsOpenRequest?.Invoke(adFormat); };
             _bridge.OnNativeAdsOpenResult += (adFormat, result) => { OnNativeAdsOpenResult?.Invoke(adFormat, result); };
             _bridge.OnPlayerDataReceive += playerData => { OnPlayerDataReceive?.Invoke(playerData); };
+            _bridge.OnFocusStateReceived += hasFocus => { OnFocusStateReceived?.Invoke(hasFocus); };
         }
 
         public void ShowNativeAds(string adFormat)

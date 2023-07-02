@@ -74,6 +74,9 @@ namespace KlopoffGames.WebPlatforms.Yandex
         
         public delegate void PlayerDataReceiveDelegate(Dictionary<string, object> playerData);
         public event PlayerDataReceiveDelegate OnPlayerDataReceive;
+        
+        public delegate void FocusStateReceivedDelegate(bool hasFocus);
+        public event FocusStateReceivedDelegate OnFocusStateReceived;
 
         public YandexManager(
             UnityYandexBridge bridge
@@ -101,6 +104,7 @@ namespace KlopoffGames.WebPlatforms.Yandex
             _bridge.OnRewardedAdvOpen += () => { OnRewardedAdvOpen?.Invoke(); };
             _bridge.OnRewardedAdvClose += rewarded => { OnRewardedAdvClose?.Invoke(rewarded); };
             _bridge.OnPlayerDataReceive += playerData => { OnPlayerDataReceive?.Invoke(playerData); };
+            _bridge.OnFocusStateReceived += hasFocus => { OnFocusStateReceived?.Invoke(hasFocus); };
         }
         
         public void OnGameReady()

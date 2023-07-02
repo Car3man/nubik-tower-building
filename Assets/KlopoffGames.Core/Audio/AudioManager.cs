@@ -11,11 +11,23 @@ namespace KlopoffGames.Core.Audio
         private readonly List<AudioSource> _musicAudioSources = new(1);
         private readonly List<AudioSource> _soundAudioSources = new(32);
 
+        private bool _mute;
         private bool _musicMute;
         private bool _soundMute;
         private float _musicVolume = 1f;
         private float _soundVolume = 1f;
 
+        public bool Mute
+        {
+            get => _mute;
+            set
+            {
+                _mute = value;
+                OnMuteUpdate();
+                OnMuteChange?.Invoke(_mute);
+            }
+        }
+        
         public bool MusicMute
         {
             get => _musicMute;
@@ -59,6 +71,9 @@ namespace KlopoffGames.Core.Audio
                 OnSoundVolumeChange?.Invoke(_soundVolume);
             }
         }
+        
+        public delegate void MuteChangeDelegate(bool val);
+        public event MuteChangeDelegate OnMuteChange;
 
         public delegate void MusicMuteChangeDelegate(bool val);
         public event MusicMuteChangeDelegate OnMusicMuteChange;
@@ -210,6 +225,10 @@ namespace KlopoffGames.Core.Audio
 
         private float GetFinalMusicVolume(float volume)
         {
+            if (Mute)
+            {
+                return 0f;
+            }
             if (MusicMute)
             {
                 return 0f;
@@ -219,6 +238,10 @@ namespace KlopoffGames.Core.Audio
         
         private float GetFinalSoundVolume(float volume)
         {
+            if (Mute)
+            {
+                return 0f;
+            }
             if (SoundMute)
             {
                 return 0f;

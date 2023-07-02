@@ -54,6 +54,9 @@ namespace KlopoffGames.WebPlatforms.Yandex
         
         public delegate void PlayerDataReceiveDelegate(Dictionary<string, object> playerData);
         public event PlayerDataReceiveDelegate OnPlayerDataReceive;
+        
+        public delegate void FocusStateReceivedDelegate(bool hasFocus);
+        public event FocusStateReceivedDelegate OnFocusStateReceived;
 
         private void Start()
         {
@@ -115,6 +118,16 @@ namespace KlopoffGames.WebPlatforms.Yandex
         {
             var parsedPayload = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload);
             OnPlayerDataReceive?.Invoke(parsedPayload);
+        }
+        
+        private void Yandex2Unity_OnFocusStateReceived(string payload)
+        {
+            var template = new
+            {
+                hasFocus = false
+            };
+            var parsedPayload = JsonConvert.DeserializeAnonymousType(payload, template);
+            OnFocusStateReceived?.Invoke(parsedPayload.hasFocus);
         }
     }
 }
