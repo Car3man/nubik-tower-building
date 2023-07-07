@@ -6,6 +6,7 @@ using KlopoffGames.WebPlatforms.VK;
 #endif
 #if YANDEX_GAMES && !UNITY_EDITOR
 using KlopoffGames.WebPlatforms.Yandex;
+using KlopoffGames.Core.Ads;
 #endif
 using NubikTowerBuilding.Behaviours;
 using NubikTowerBuilding.Services;
@@ -30,6 +31,7 @@ namespace NubikTowerBuilding.Managers
         [Inject] private UserCoinsService _userCoinsService;
 #if YANDEX_GAMES && !UNITY_EDITOR
         [Inject] private YandexManager _yandex;
+        [Inject] private IAdvertisement _ads;
 #endif
 #if VK_GAMES && !UNITY_EDITOR
         [Inject] private VKManager _vk;
@@ -70,6 +72,10 @@ namespace NubikTowerBuilding.Managers
             _buildManager.SetBuildingBlockType(_savingService.GetLastBlockPlayed());
             
             OnGameReady(false);
+            
+#if YANDEX_GAMES && !UNITY_EDITOR
+            _ads.ShowInterstitialAd();
+#endif
         }
 
         private void CleanUpManagers()
